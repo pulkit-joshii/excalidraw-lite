@@ -1,7 +1,7 @@
 import React, { useReducer } from 'react'
 import boardContext from "./board-context"
 import { TOOL_ACTION_TYPES, TOOL_ITEMS, BOARD_ACTION } from '../constants';
-import { createRoughElement, getSvgPathFromStroke, isPointNearElement } from '../utils/element';
+import { createElement, getSvgPathFromStroke, isPointNearElement } from '../utils/element';
 import getStroke from 'perfect-freehand';
 
 const boardReducer = (state, action) => {
@@ -19,13 +19,13 @@ const boardReducer = (state, action) => {
             };
         case BOARD_ACTION.DRAW_DOWN: {
             const {clientX, clientY, stroke, fill, size} = action.payload;
-            const newElement = createRoughElement(state.elements.length, clientX, clientY, clientX, clientY,
+            const newElement = createElement(state.elements.length, clientX, clientY, clientX, clientY,
                 { type: state.activeToolItem, stroke, fill, size })
             
             const prevElements = state.elements;
             return {
                 ...state,
-                toolActionType: state.activeToolItem === TOOL_ITEMS.ERASER ? TOOL_ACTION_TYPES.ERASING : TOOL_ACTION_TYPES.DRAWING,
+                toolActionType: state.activeToolItem === TOOL_ITEMS.TEXT ? TOOL_ACTION_TYPES.WRITING : TOOL_ACTION_TYPES.DRAWING,
                 elements: [...prevElements, newElement],
             };
         }
@@ -40,7 +40,7 @@ const boardReducer = (state, action) => {
                 case TOOL_ITEMS.CIRCLE:
                 case TOOL_ITEMS.ARROW:
                     const { x1, y1, stroke, fill, size } = newElements[index];
-                    const newElement = createRoughElement(index, x1, y1, clientX, clientY, { type: state.activeToolItem, stroke, fill, size });
+                    const newElement = createElement(index, x1, y1, clientX, clientY, { type: state.activeToolItem, stroke, fill, size });
                     newElements[index] = newElement;
                     return {
                         ...state,
@@ -53,17 +53,6 @@ const boardReducer = (state, action) => {
                         ...state,
                         elements: newElements,
                     };
-                // case TOOL_ITEMS.ERASER: {
-                //     const { clientX, clientY } = action.payload;
-                //     let newElements = [...state.elements];
-                //     newElements = newElements.filter((element) => {
-                //         return !isPointNearElement(element, clientX, clientY);
-                //     });
-                //     return {
-                //         ...state,
-                //         elements: newElements,
-                //     }
-                // }
                 default:
                     throw new Error("Type not recognized");
             };
@@ -76,6 +65,16 @@ const boardReducer = (state, action) => {
             });
             return {
                 ...state,
+                elements: newElements,
+            };
+        }
+        case BOARD_ACTION.CHANGE_TEXT: {
+            const index = state.elements.length - 1;
+            const newElements = [...state.elements];
+            newElements[index].text = action.payload.text;
+            return {
+                ...state,
+                toolActionType: TOOL_ACTION_TYPES.NONE,
                 elements: newElements,
             };
         }
@@ -106,6 +105,7 @@ const BoardProvider = ({ children }) => {
     };
 
     const handleMouseDown = (event, toolboxState) => {
+        if (boardState.toolActionType === TOOL_ACTION_TYPES.WRITING) return;
         const {clientX, clientY} = event;
         if (boardState.activeToolItem === TOOL_ITEMS.ERASER) {
         dispatchBoardAction({
@@ -129,6 +129,7 @@ const BoardProvider = ({ children }) => {
     };
 
     const handleMouseMove = (event) => {
+        if (boardState.toolActionType === TOOL_ACTION_TYPES.WRITING) return;
         const {clientX, clientY} = event;
         if(boardState.toolActionType === TOOL_ACTION_TYPES.DRAWING) {
             dispatchBoardAction({
@@ -152,6 +153,7 @@ const BoardProvider = ({ children }) => {
     };
 
     const handleMouseUp = () => {
+        if (boardState.toolActionType === TOOL_ACTION_TYPES.WRITING) return;
         dispatchBoardAction({
             type: BOARD_ACTION.CHANGE_ACTION_TYPE,
             payload: {
@@ -160,6 +162,14 @@ const BoardProvider = ({ children }) => {
         })
     };
 
+    const handleTextAreaBlur = (text, toolboxState) => {
+        dispatchBoardAction({
+        type: BOARD_ACTION.CHANGE_TEXT,
+        payload: {
+            text,
+        },
+        });
+    };
     const boardContextValue = {
         activeToolItem: boardState.activeToolItem,
         elements: boardState.elements,
@@ -167,7 +177,8 @@ const BoardProvider = ({ children }) => {
         handleToolItemClick,
         handleMouseDown,
         handleMouseMove,
-        handleMouseUp
+        handleMouseUp,
+        handleTextAreaBlur,
     };
   return (
     <boardContext.Provider value={boardContextValue}>

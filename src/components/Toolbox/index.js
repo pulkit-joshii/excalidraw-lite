@@ -48,7 +48,7 @@ const Toolbox = () => {
         </div>}
         {SIZE_TOOL_ITEMS.includes(activeToolItem) && (
         <div className={classes.selectOptionContainer}>
-          <div className={classes.toolBoxLabel}>
+          <div className={classes.toolBoxLabel}>Brush Size
             {activeToolItem === TOOL_ITEMS.TEXT ? "Font Size" : "Brush Size"}
           </div>
           <input
