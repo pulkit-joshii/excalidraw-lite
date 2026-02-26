@@ -1,7 +1,8 @@
 import React, { useReducer } from 'react'
 import boardContext from "./board-context"
 import { TOOL_ACTION_TYPES, TOOL_ITEMS, BOARD_ACTION } from '../constants';
-import { createRoughElement } from '../utils/element';
+import { createRoughElement, getSvgPathFromStroke } from '../utils/element';
+import getStroke from 'perfect-freehand';
 
 const boardReducer = (state, action) => {
     switch (action.type) {
@@ -12,8 +13,9 @@ const boardReducer = (state, action) => {
             };
         }
         case BOARD_ACTION.DRAW_DOWN: {
-            const {clientX, clientY} = action.payload;
-            const newElement = createRoughElement(state.elements.length, clientX, clientY, clientX, clientY, { type: state.activeToolItem })
+            const {clientX, clientY, stroke, fill, size} = action.payload;
+            const newElement = createRoughElement(state.elements.length, clientX, clientY, clientX, clientY,
+                { type: state.activeToolItem, stroke, fill, size })
             
             const prevElements = state.elements;
             return {
@@ -26,15 +28,28 @@ const boardReducer = (state, action) => {
             const {clientX, clientY} = action.payload;
             const newElements = [...state.elements];
             const index = state.elements.length - 1;
-            const { x1, y1 } = newElements[index];
-            // newElements[index].x2 = clientX;
-            // newElements[index].y2 = clientY;
-            // newElements[index].roughEle = gen.line(newElements[index].x1, newElements[index].y1, clientX, clientY);
-            const newElement = createRoughElement(index, x1, y1, clientX, clientY, { type: state.activeToolItem });
-            newElements[index] = newElement;
-            return {
-                ...state,
-                elements: newElements,
+            const { type } = newElements[index];
+            switch (type) {
+                case TOOL_ITEMS.LINE: 
+                case TOOL_ITEMS.RECTANGLE:
+                case TOOL_ITEMS.CIRCLE:
+                case TOOL_ITEMS.ARROW:
+                    const { x1, y1, stroke, fill, size } = newElements[index];
+                    const newElement = createRoughElement(index, x1, y1, clientX, clientY, { type: state.activeToolItem, stroke, fill, size });
+                    newElements[index] = newElement;
+                    return {
+                        ...state,
+                        elements: newElements,
+                    };
+                case TOOL_ITEMS.BRUSH:
+                    newElements[index].points = [...newElements[index].points, { x: clientX, y: clientY} ];
+                    newElements[index].path = new Path2D(getSvgPathFromStroke(getStroke(newElements[index].points)));
+                    return {
+                        ...state,
+                        elements: newElements,
+                    }
+                default:
+                    throw new Error("Type not recognized");
             };
         }
         case BOARD_ACTION.DRAW_UP: {
@@ -49,7 +64,7 @@ const boardReducer = (state, action) => {
 };
 
 const initialBoardState = {
-    activeToolItem: TOOL_ITEMS.LINE,
+    activeToolItem: TOOL_ITEMS.BRUSH,
     elements: [],
     toolActionType: TOOL_ACTION_TYPES.NONE,
 }
@@ -59,7 +74,6 @@ const BoardProvider = ({ children }) => {
         boardReducer,
         initialBoardState
     );
-    // const [activeToolItem, setActiveToolItem] = useState("");
 
     const handleToolItemClick = (tool) => {
         dispatchBoardAction({
@@ -70,13 +84,16 @@ const BoardProvider = ({ children }) => {
         })
     };
 
-    const handleMouseDown = (event) => {
+    const handleMouseDown = (event, toolboxState) => {
         const {clientX, clientY} = event;
         dispatchBoardAction({
             type: BOARD_ACTION.DRAW_DOWN,
             payload: {
                 clientX,
                 clientY,
+                stroke: toolboxState[boardState.activeToolItem]?.stroke,
+                fill: toolboxState[boardState.activeToolItem]?.fill,
+                size: toolboxState[boardState.activeToolItem]?.size,
             }
         })
     };

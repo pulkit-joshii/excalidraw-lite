@@ -1,11 +1,14 @@
 import { useContext, useEffect, useLayoutEffect, useRef } from "react";
 import rough from "roughjs";
 import boardContext from "../../store/board-context";
-import { TOOL_ACTION_TYPES } from "../../constants";
+import { TOOL_ACTION_TYPES, TOOL_ITEMS } from "../../constants";
+import toolboxContext from "../../store/toolbox-context";
 
 function Board() {
   const canvasRef = useRef();
   const { elements,handleMouseDown, handleMouseMove, handleMouseUp, toolActionType } = useContext(boardContext);
+  const { toolboxState } = useContext(toolboxContext);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     canvas.width = window.innerWidth;
@@ -17,7 +20,21 @@ function Board() {
     const roughCanvas = rough.canvas(canvas);
     const context = canvas.getContext("2d");
     elements.forEach(element => {
-        roughCanvas.draw(element.roughEle);
+        switch (element.type) {
+            case TOOL_ITEMS.LINE: 
+            case TOOL_ITEMS.RECTANGLE:
+            case TOOL_ITEMS.CIRCLE:
+            case TOOL_ITEMS.ARROW:
+                roughCanvas.draw(element.roughEle);
+                break;
+            case TOOL_ITEMS.BRUSH:
+                context.fillStyle = element.stroke;
+                context.fill(element.path);
+                context.restore();
+                break;
+            default:
+                throw new Error("Type not recognized")
+        }
     });
 
     return () => {
@@ -26,17 +43,17 @@ function Board() {
   }, [elements]);
 
   const handleBoardMouseDown = (event) => {
-    handleMouseDown(event);
+    handleMouseDown(event, toolboxState);
   };
 
   const handleBoardMouseMove = (event) => {
     if(toolActionType === TOOL_ACTION_TYPES.DRAWING) {
-        handleMouseMove(event);
+        handleMouseMove(event, toolboxState);
     }
   };
 
   const handleBoardMouseUp = (event) => {
-    handleMouseUp(event);
+    handleMouseUp(event, toolboxState);
   }
 
   return (
@@ -44,6 +61,6 @@ function Board() {
       <canvas ref={canvasRef} onMouseDown={handleBoardMouseDown} onMouseMove={handleBoardMouseMove} onMouseUp={handleBoardMouseUp}/>
     </div>
   );
-}
+};
 
 export default Board;
