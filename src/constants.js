@@ -16,6 +16,8 @@ export const BOARD_ACTION = {
     ERASE: "ERASE",
     CHANGE_ACTION_TYPE: "CHANGE_ACTION_TYPE",
     CHANGE_TEXT: "CHANGE_TEXT",
+    UNDO: "UNDO",
+    REDO: "REDO",
 };
 
 export const TOOL_ACTION_TYPES = {

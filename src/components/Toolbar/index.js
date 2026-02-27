@@ -2,13 +2,13 @@ import classes from "./index.module.css"
 import cx from "classnames"
 import { useContext } from "react"
 import { LuRectangleHorizontal } from "react-icons/lu"
-import { FaSlash, FaRegCircle, FaArrowRight, FaPaintBrush, FaEraser, FaFont } from "react-icons/fa"
+import { FaSlash, FaRegCircle, FaArrowRight, FaPaintBrush, FaEraser, FaFont, FaUndoAlt, FaRedoAlt } from "react-icons/fa"
 import "../../constants"
 import { TOOL_ITEMS } from "../../constants"
 import boardContext from "../../store/board-context"
 
 const Toolbar = () => {
-  const { activeToolItem, handleToolItemClick } = useContext(boardContext);
+  const { activeToolItem, handleToolItemClick, undo, redo } = useContext(boardContext);
   return (
     <div className={classes.container}>
       <div className={
@@ -32,6 +32,8 @@ const Toolbar = () => {
       <div className={
           cx(classes.toolItem, {[classes.active]: activeToolItem === TOOL_ITEMS.TEXT})
         } onClick={() => handleToolItemClick(TOOL_ITEMS.TEXT)}><FaFont /></div>
+      <div className={classes.toolItem} onClick={undo}><FaUndoAlt /></div>
+      <div className={classes.toolItem} onClick={redo}><FaRedoAlt /></div>
     </div>
   )
 }

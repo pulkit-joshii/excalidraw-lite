@@ -57,25 +57,59 @@ const boardReducer = (state, action) => {
                     throw new Error("Type not recognized");
             };
         }
+        case BOARD_ACTION.DRAW_UP: {
+            const elementsCopy = [...state.elements];
+            const newHistory = state.history.slice(0, state.index + 1);
+            newHistory.push(elementsCopy);
+            return {
+                ...state,
+                history: newHistory,
+                index: state.index + 1,
+            };
+        }
         case BOARD_ACTION.ERASE: {
             const { clientX, clientY } = action.payload;
             let newElements = [...state.elements];
             newElements = newElements.filter((element) => {
                 return !isPointNearElement(element, clientX, clientY);
             });
+            const newHistory = state.history.slice(0, state.index + 1);
+            newHistory.push(newElements);
             return {
                 ...state,
                 elements: newElements,
+                history: newHistory,
+                index: state.index + 1,
             };
         }
         case BOARD_ACTION.CHANGE_TEXT: {
             const index = state.elements.length - 1;
             const newElements = [...state.elements];
             newElements[index].text = action.payload.text;
+            const newHistory = state.history.slice(0, state.index + 1);
+            newHistory.push(newElements);
             return {
                 ...state,
                 toolActionType: TOOL_ACTION_TYPES.NONE,
                 elements: newElements,
+                history: newHistory,
+                index: state.index + 1,
+            };
+        }
+        case BOARD_ACTION.UNDO: {
+            if (state.index <= 0) return state;
+            return {
+                ...state,
+                elements: state.history[state.index - 1],
+                index: state.index - 1,
+            };
+        }
+        case BOARD_ACTION.REDO: {
+            if (state.index >= state.history.length - 1) return state;
+            return {
+                ...state,
+                elements: state.history[state.index + 1],
+                index: state.index + 1,
             };
         }
         default:
@@ -87,6 +121,8 @@ const initialBoardState = {
     activeToolItem: TOOL_ITEMS.BRUSH,
     elements: [],
     toolActionType: TOOL_ACTION_TYPES.NONE,
+    history: [[]],
+    index: 0,
 }
 
 const BoardProvider = ({ children }) => {
@@ -154,6 +190,11 @@ const BoardProvider = ({ children }) => {
 
     const handleMouseUp = () => {
         if (boardState.toolActionType === TOOL_ACTION_TYPES.WRITING) return;
+        if (boardState.toolActionType === TOOL_ACTION_TYPES.DRAWING) {
+            dispatchBoardAction({
+                type: BOARD_ACTION.DRAW_UP,
+            });
+        }
         dispatchBoardAction({
             type: BOARD_ACTION.CHANGE_ACTION_TYPE,
             payload: {
@@ -170,6 +211,19 @@ const BoardProvider = ({ children }) => {
         },
         });
     };
+
+    const handleUndoBoard = () => {
+        dispatchBoardAction({
+        type: BOARD_ACTION.UNDO,
+        });
+    };
+
+    const handleRedoBoard = () => {
+        dispatchBoardAction({
+        type: BOARD_ACTION.REDO,
+        });
+    };
+
     const boardContextValue = {
         activeToolItem: boardState.activeToolItem,
         elements: boardState.elements,
@@ -179,6 +233,8 @@ const BoardProvider = ({ children }) => {
         handleMouseMove,
         handleMouseUp,
         handleTextAreaBlur,
+        undo: handleUndoBoard,
+        redo: handleRedoBoard,
     };
   return (
     <boardContext.Provider value={boardContextValue}>
