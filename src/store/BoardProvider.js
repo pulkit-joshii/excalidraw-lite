@@ -1,4 +1,4 @@
-import React, { useReducer } from 'react'
+import React, { useCallback, useReducer } from 'react'
 import boardContext from "./board-context"
 import { TOOL_ACTION_TYPES, TOOL_ITEMS, BOARD_ACTION } from '../constants';
 import { createElement, getSvgPathFromStroke, isPointNearElement } from '../utils/element';
@@ -203,7 +203,7 @@ const BoardProvider = ({ children }) => {
         })
     };
 
-    const handleTextAreaBlur = (text, toolboxState) => {
+    const handleTextAreaBlur = (text) => {
         dispatchBoardAction({
         type: BOARD_ACTION.CHANGE_TEXT,
         payload: {
@@ -212,17 +212,17 @@ const BoardProvider = ({ children }) => {
         });
     };
 
-    const handleUndoBoard = () => {
+    const handleUndoBoard = useCallback(() => {
         dispatchBoardAction({
         type: BOARD_ACTION.UNDO,
         });
-    };
+    }, []);
 
-    const handleRedoBoard = () => {
+    const handleRedoBoard = useCallback(() => {
         dispatchBoardAction({
         type: BOARD_ACTION.REDO,
         });
-    };
+    }, []);
 
     const boardContextValue = {
         activeToolItem: boardState.activeToolItem,

@@ -8,7 +8,7 @@ import classes from "./index.module.css";
 function Board() {
   const canvasRef = useRef();
   const textAreaRef = useRef();
-  const { elements, toolActionType, handleMouseDown, handleMouseMove, handleMouseUp, handleTextAreaBlur } = useContext(boardContext);
+  const { elements, toolActionType, handleMouseDown, handleMouseMove, handleMouseUp, handleTextAreaBlur, undo, redo } = useContext(boardContext);
   const { toolboxState } = useContext(toolboxContext);
 
   useEffect(() => {
@@ -16,6 +16,22 @@ function Board() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
   }, []);
+
+  useEffect(() => {
+    function handleKeyDown(event) {
+      if (event.ctrlKey && event.key === "z") {
+        undo();
+      } else if (event.ctrlKey && event.key === "y") {
+        redo();
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [undo, redo]);
 
   useLayoutEffect(() => {
     const canvas = canvasRef.current;
@@ -85,9 +101,7 @@ function Board() {
             fontSize: `${elements[elements.length - 1]?.size}px`,
             color: elements[elements.length - 1]?.stroke,
           }}
-          onBlur={(event) =>
-            handleTextAreaBlur(event.target.value, toolboxState)
-          }
+          onBlur={(event) => handleTextAreaBlur(event.target.value)}
         />
       )}
       <canvas
